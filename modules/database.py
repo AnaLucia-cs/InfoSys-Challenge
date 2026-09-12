@@ -27,7 +27,7 @@ def init_db():
 
 def insert_telemetry(tick, agent_id, lat, lon, net_earnings, fuel_spent):
     try:
-        conn = psycopg2.connect(DATABASE_URL)
+        conn = psycopg2.connect("postgresql://tsdbadmin:Diego-123456789@obyysjbiso.ooxj8jiz1m.tsdb.cloud.timescale.com:34714/tsdb?sslmode=require")
         cur = conn.cursor()
         cur.execute("""
             INSERT INTO telemetry_logs (tick, agent_id, lat, lon, net_earnings, fuel_spent)
