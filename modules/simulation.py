@@ -1,7 +1,7 @@
 import random
 import uuid
 from modules.contract import TickResponse, AgentState, Coordinates, OrderContract
-from database import insert_telemetry
+from modules.database import insert_telemetry
 
 class ShiftSimulator:
     def __init__(self):
