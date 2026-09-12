@@ -1,6 +1,7 @@
 import os
 from flask import Flask, render_template, jsonify, request
 from modules.simulation import ShiftSimulator
+from explainer import analizar_y_explicar
 
 app = Flask(__name__)
 simulator = ShiftSimulator()
@@ -8,6 +9,28 @@ simulator = ShiftSimulator()
 @app.route('/')
 def index():
     return render_template('main.html')
+
+@app.route('/api/evaluar', methods=['POST'])
+def evaluar_pedido():
+    # 1. Recibir los datos del pedido que manda tu mapa
+    datos = request.json
+    distancia = datos.get("distancia_km")
+    tarifa = datos.get("tarifa_mxn")
+    trafico = datos.get("trafico", "Moderado") # Moderado por defecto
+
+    # 2. Pasar los datos a tu Agente Gemini
+    try:
+        resultado_ia = analizar_y_explicar(distancia, tarifa, trafico)
+        
+        # 3. Enviar la decisión estructurada de vuelta al mapa
+        return jsonify({
+            "status": "success",
+            "decision": resultado_ia["decision"],
+            "explicacion": resultado_ia["explicacion"]
+        })
+    except Exception as e:
+        # Por si falla la API de Gemini
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/tick')
 def get_tick():
