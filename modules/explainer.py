@@ -1,10 +1,10 @@
 import os
 import json
-from google import genai
+from google import generativeai as genai
 from dotenv import load_dotenv
 
 load_dotenv()
-genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 def analizar_y_explicar(distancia_km, tarifa_mxn, trafico):
     prompt = f"""

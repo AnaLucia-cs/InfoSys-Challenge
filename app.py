@@ -3,14 +3,14 @@ from flask import Flask, render_template, request, jsonify
 # 1. Importar los módulos que creaste
 from modules.explainer import analizar_y_explicar
 from modules.database import init_db, guardar_pedido
-from modules.database import inicializar_tabla, guardar_pedido
+from modules.database import guardar_pedido
 
 app = Flask(__name__)
-init_db()
+
 
 # 2. Inicializar la base de datos al arrancar el servidor
 try:
-    inicializar_tabla()
+    init_db()
     print("Base de datos conectada y tabla verificada.")
 except Exception as e:
     print(f"Advertencia: No se pudo conectar a la base de datos: {e}")
@@ -18,7 +18,15 @@ except Exception as e:
 # Ruta principal (Tu página web)
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('main.html')
+
+@app.route('/perfil')
+def perfil():
+    return render_template('perfil.html') # O la vista que corresponda
+
+@app.route('/config')
+def config():
+    return render_template('config.html') # O la vista que corresponda
 
 # 3. Ruta API para que el mapa se comunique con Gemini y TigerData
 @app.route('/api/evaluar', methods=['POST'])
