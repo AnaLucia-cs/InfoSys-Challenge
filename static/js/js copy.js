@@ -19,31 +19,29 @@ const map = new maplibregl.Map({
 // ======================================
 // DESTINO
 // ======================================
-const destinos = [    {
-        coordenadas: [-100.3161, 25.6866],
-        color: "red"
-    },{
-        coordenadas: [-100.2930, 25.6710],
-        color: "yellow"
-    },{
-        coordenadas: [-100.3000, 25.6800],
-        color: "green"
-    }
-];
-
-destinos.forEach(function(destino) {
-    new maplibregl.Marker({
-        color: destino.color
-    })
-        .setLngLat(destino.coordenadas)
-        .addTo(map);
-    });
-
+const destinos ={ [-100.2930, 25.6710]};
 // ======================================
 // MARCADOR DEL ORIGEN INEXISTENTE
 // ======================================
 let marcadorOrigen = null;
+// ======================================
+// CREAR MARCADOR DEL DESTINO
+// ======================================
+new maplibregl.Marker()
+    .setLngLat(destino)
+    .addTo(map);
 
+
+// ======================================
+// CUANDO EL MAPA TERMINE DE CARGAR
+// ======================================
+map.on('load', function () {
+    // Ruta inicial
+    calcularRuta([-100.3161, 25.6866], destino);
+});
+
+
+// ======================================
 // HACER CLICK EN EL MAPA
 // ======================================
 map.on('click', async function (e) {
@@ -270,124 +268,3 @@ async function calcularRuta(origen, destino) {
     }
 
 }
-
-
-
-
-
-
-
-/* ========================================
-   CREAR PEDIDO
-   ======================================== */
-
-function crearPedido({
-    prioridad = "#9783f0",
-    tiempo = 30,
-    titulo = "Pedido",
-    detalles = ""
-}) {
-
-    // Contenedor principal
-    const contenedor = document.getElementById("display-message");
-    /* ========================================
-       CREAR ELEMENTOS
-       ======================================== */
-    const mensaje = document.createElement("div");
-    mensaje.classList.add("mensaje");
-    // Barra del timer
-    const time = document.createElement("div");
-    time.classList.add("time");
-    // Barra de prioridad
-    const indicator = document.createElement("div");
-    indicator.classList.add("indicator");
-    indicator.style.backgroundColor = prioridad;
-    // Contenido
-    const messageContent = document.createElement("div");
-    messageContent.classList.add("message-content");
-    // Título
-    const message = document.createElement("div");
-    message.classList.add("message");
-    message.textContent = titulo;
-    // Detalles
-    const details = document.createElement("div");
-    details.classList.add("details");
-    details.textContent = detalles;
-    // Botones
-    const buttons = document.createElement("div");
-    buttons.classList.add("buttons");
-    const acceptButton = document.createElement("button");
-    acceptButton.classList.add("accept-button");
-    acceptButton.textContent = "Aceptar";
-    const rejectButton = document.createElement("button");
-    rejectButton.classList.add("reject-button");
-    rejectButton.textContent = "Rechazar";
-    /* ========================================
-       ARMAR PEDIDO
-       ======================================== */
-    buttons.appendChild(acceptButton);
-    buttons.appendChild(rejectButton);
-    messageContent.appendChild(message);
-    messageContent.appendChild(details);
-    messageContent.appendChild(buttons);
-    mensaje.appendChild(time);
-    mensaje.appendChild(indicator);
-    mensaje.appendChild(messageContent);
-    /* ========================================
-       AGREGAR AL CONTENEDOR
-       ======================================== */
-    contenedor.appendChild(mensaje);
-    /* ========================================
-       TIMER
-       ======================================== */
-    let tiempoRestante = tiempo;
-    time.style.transition = `width ${tiempo}s linear`;
-    // Inicia lleno
-    time.style.width = "100%";
-    // Pequeño delay para que CSS detecte
-    // el cambio y comience la animación
-    setTimeout(() => {
-        time.style.width = "0%";
-    }, 50);
-    /* ========================================
-       CUANDO TERMINA EL TIMER
-       ======================================== */
-    const timer = setInterval(() => {
-        tiempoRestante--;
-        if (tiempoRestante <= 0) {
-            clearInterval(timer);
-            // Eliminar automáticamente
-            mensaje.remove();
-        }
-    }, 1000);
-    /* ========================================
-       BOTÓN ACEPTAR
-       ======================================= */
-    acceptButton.addEventListener("click", () => {
-        console.log("Pedido aceptado:", titulo);
-        clearInterval(timer);
-        mensaje.remove();
-    });
-    /* ========================================
-       BOTÓN RECHAZAR
-       ======================================== */
-    rejectButton.addEventListener("click", () => {
-        console.log("Pedido rechazado:", titulo);
-        clearInterval(timer);
-        mensaje.remove();
-    });
-    /* ========================================
-       DEVOLVER EL ELEMENTO
-       ======================================== */
-    return mensaje;
-}
-
-
-
-crearPedido({
-    prioridad: "#ff0000",
-    tiempo: 30,
-    titulo: "Pedido #001",
-    detalles: "Recoger paquete en Plaza Fiesta y entregarlo en San Pedro."
-});
-
