@@ -1,4 +1,5 @@
 import random
+import uuid
 from modules.contract import TickResponse, AgentState, Coordinates, OrderContract
 
 class ShiftSimulator:
