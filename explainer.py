@@ -34,7 +34,7 @@ def analizar_ruta(distancia_km, tarifa_mxn, trafico, clima):
     
     try:
         # gemini-1.5-flash es el modelo ideal por su rapidez y bajo costo en operaciones de texto
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-3.8-flash')
         respuesta = model.generate_content(prompt)
         return respuesta.text
     except Exception as e:
