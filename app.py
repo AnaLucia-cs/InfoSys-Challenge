@@ -1,7 +1,7 @@
 import os
 from flask import Flask, render_template, jsonify, request
 from modules.simulation import ShiftSimulator
-from explainer import analizar_y_explicar
+from modules.explainer import analizar_y_explicar
 
 app = Flask(__name__)
 simulator = ShiftSimulator()
