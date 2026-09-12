@@ -45,3 +45,23 @@ class ShiftSimulator:
                 net_earnings=self.tick_count * 4.0, fuel_spent=self.tick_count * 0.3
             )
         )
+
+def generate_batch_of_orders(num_orders=50):
+    orders = []
+    for _ in range(num_orders):
+        pick_lat = random.uniform(25.6400, 25.7200)
+        pick_lon = random.uniform(-100.3800, -100.2800)
+        drop_lat = pick_lat + random.uniform(-0.02, 0.02)
+        drop_lon = pick_lon + random.uniform(-0.02, 0.02)
+        payout = round(20.0 + random.uniform(15.0, 60.0), 2)
+        
+        orders.append(OrderContract(
+            id=f"ORD-{uuid.uuid4().hex[:6].upper()}",
+            pickup=Coordinates(lat=pick_lat, lon=pick_lon),
+            dropoff=Coordinates(lat=drop_lat, lon=drop_lon),
+            payout_mxn=payout,
+            prep_time_minutes=random.randint(5, 15),
+            time_limit_minutes=random.randint(30, 45),
+            status="PENDING"
+        ))
+    return orders
