@@ -52,3 +52,4 @@ def evaluar_pedido():
 if __name__ == '__main__':
     # Usar el puerto 5000 por defecto, accesible desde cualquier IP
     app.run(host='0.0.0.0', port=5000, debug=True)
+ 
