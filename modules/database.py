@@ -3,57 +3,27 @@ import psycopg2
 from dotenv import load_dotenv
 
 load_dotenv()
+DATABASE_URL = os.getenv("postgresql://tsdbadmin:Diego-123456789@obyysjbiso.ooxj8jiz1m.tsdb.cloud.timescale.com:34714/tsdb?sslmode=require")
 
 def init_db():
-    """Crea la tabla de telemetría si no existe."""
-    db_url = os.getenv("DATABASE_URL")
-    if not db_url:
-        return
-    try:
-        conn = psycopg2.connect(db_url)
-        cursor = conn.cursor()
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS telemetry_logs (
-                id SERIAL PRIMARY KEY,
-                tick INT NOT NULL,
-                agent_id VARCHAR(50) NOT NULL,
-                lat FLOAT NOT NULL,
-                lon FLOAT NOT NULL,
-                gross_earnings FLOAT NOT NULL,
-                fuel_spent FLOAT NOT NULL,
-                net_earnings FLOAT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        """)
-        conn.commit()
-        cursor.close()
-        conn.close()
-        print("✅ Tabla 'telemetry_logs' verificada en TigerData.")
-    except Exception as e:
-        print(f"⚠️ Error inicializando TigerData: {e}")
+    conn = psycopg2.connect("postgresql://tsdbadmin:Diego-123456789@obyysjbiso.ooxj8jiz1m.tsdb.cloud.timescale.com:34714/tsdb?sslmode=require")
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS telemetry_logs (
+            id SERIAL PRIMARY KEY,
+            tick INT NOT NULL,
+            agent_id VARCHAR(50) NOT NULL,
+            lat DOUBLE PRECISION NOT NULL,
+            lon DOUBLE PRECISION NOT NULL,
+            net_earnings NUMERIC(10, 2) NOT NULL,
+            fuel_spent NUMERIC(10, 2) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    """)
+    conn.commit()
+    cur.close()
+    conn.close()
+    print("Tabla 'telemetry_logs' inicializada correctamente.")
 
-def save_telemetry(tick: int, agent_state):
-    """Guarda una captura de telemetría del repartidor."""
-    db_url = os.getenv("DATABASE_URL")
-    if not db_url:
-        return
-    try:
-        conn = psycopg2.connect(db_url)
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO telemetry_logs (tick, agent_id, lat, lon, gross_earnings, fuel_spent, net_earnings)
-            VALUES (%s, %s, %s, %s, %s, %s, %s);
-        """, (
-            tick,
-            agent_state.agent_id,
-            agent_state.coords.lat,
-            agent_state.coords.lon,
-            agent_state.gross_earnings,
-            agent_state.fuel_spent_mxn,
-            agent_state.net_earnings
-        ))
-        conn.commit()
-        cursor.close()
-        conn.close()
-    except Exception as e:
-        print(f"⚠️ Error guardando telemetría: {e}")
+if __name__ == "__main__":
+    init_db()
