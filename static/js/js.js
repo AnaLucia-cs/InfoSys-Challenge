@@ -1,3 +1,5 @@
+let marcador = null;
+
 const colores = [
     '#7ca3f8', // rojo
     '#006eff', // verde
@@ -22,33 +24,47 @@ const map = new maplibregl.Map({
 //e= contiene info sobre el click
 //async=permite usar await dentro de la función
 map.on('click', async function (e) {
-    //obtener coordenadas del lugar donde hiciste click
+
     const lon = e.lngLat.lng;
     const lat = e.lngLat.lat;
 
-    //da el punto más cercano a las coordenadas
     const url =
         `https://router.project-osrm.org/nearest/v1/driving/${lon},${lat}`;
 
-    //espera a que responda
     const respuesta = await fetch(url);
-    //devuelve respuesta en JSON
     const datos = await respuesta.json();
 
     if (datos.code === 'Ok') {
-
         const punto = datos.waypoints[0].location;
 
-        // Elegir un color aleatorio
+        // Eliminar el marcador anterior
+        if (marcador) {
+            marcador.remove();
+        }
+
+        // Elegir color aleatorio
         const colorAleatorio =
             colores[Math.floor(Math.random() * colores.length)];
 
-        new maplibregl.Marker({ color: colorAleatorio })
+        // Crear el nuevo marcador
+        marcador = new maplibregl.Marker({
+            color: colorAleatorio
+        })
             .setLngLat(punto)
             .addTo(map);
 
-        console.log("Punto:", punto);
-        console.log("Color:", colorAleatorio);
-    }
+        console.log("Punto seleccionado:", punto);
+        
+        fetch('/ubi_repartidor_inicial', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                lat: lat,
+                lon: lon
+        })
+    });
 
+    }
 });
