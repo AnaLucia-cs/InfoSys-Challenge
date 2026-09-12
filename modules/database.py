@@ -25,5 +25,19 @@ def init_db():
     conn.close()
     print("Tabla 'telemetry_logs' inicializada correctamente.")
 
+def insert_telemetry(tick, agent_id, lat, lon, net_earnings, fuel_spent):
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO telemetry_logs (tick, agent_id, lat, lon, net_earnings, fuel_spent)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (tick, agent_id, lat, lon, net_earnings, fuel_spent))
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"Error guardando telemetría en TigerData: {e}")
+
 if __name__ == "__main__":
     init_db()
