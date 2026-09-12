@@ -1,12 +1,3 @@
-const colores = [
-    '#7ca3f8', // rojo
-    '#006eff', // verde
-    '#0000FF', // azul
-    '#4218b5', // naranja
-    '#800080', // morado
-    '#a52f98'  // amarillo
-];
-
 //CREAR MAPA DE MTY
 const map = new maplibregl.Map({
     container: 'map',
@@ -17,47 +8,20 @@ const map = new maplibregl.Map({
 
 
 // ======================================
-// DESTINO
-// ======================================
-const destinos = [    {
-        coordenadas: [-100.3161, 25.6866],
-        color: "red"
-    },{
-        coordenadas: [-100.2930, 25.6710],
-        color: "yellow"
-    },{
-        coordenadas: [-100.3000, 25.6800],
-        color: "green"
-    }
-];
-
-destinos.forEach(function(destino) {
-    new maplibregl.Marker({
-        color: destino.color
-    })
-        .setLngLat(destino.coordenadas)
-        .addTo(map);
-    });
-
-// ======================================
 // MARCADOR DEL ORIGEN INEXISTENTE
 // ======================================
 let marcadorOrigen = null;
-
 // HACER CLICK EN EL MAPA
 // ======================================
 map.on('click', async function (e) {
     const lon = e.lngLat.lng;
     const lat = e.lngLat.lat;
-
-
     // ==================================
     // BUSCAR LA CALLE MÁS CERCANA
     // ==================================
     const url =
         `https://router.project-osrm.org/nearest/v1/driving/` +
         `${lon},${lat}`;
-
 
     try {
         const respuesta = await fetch(url);
@@ -274,113 +238,616 @@ async function calcularRuta(origen, destino) {
 
 
 
-
-
-
-/* ========================================
-   CREAR PEDIDO
-   ======================================== */
-
 function crearPedido({
+
     prioridad = "#9783f0",
+
     tiempo = 30,
+
     titulo = "Pedido",
-    detalles = ""
+
+    detalles = "",
+
+    lat,
+
+    lng
+
 }) {
 
-    // Contenedor principal
-    const contenedor = document.getElementById("display-message");
-    /* ========================================
-       CREAR ELEMENTOS
-       ======================================== */
-    const mensaje = document.createElement("div");
-    mensaje.classList.add("mensaje");
-    // Barra del timer
-    const time = document.createElement("div");
-    time.classList.add("time");
-    // Barra de prioridad
-    const indicator = document.createElement("div");
-    indicator.classList.add("indicator");
-    indicator.style.backgroundColor = prioridad;
-    // Contenido
-    const messageContent = document.createElement("div");
-    messageContent.classList.add("message-content");
-    // Título
-    const message = document.createElement("div");
-    message.classList.add("message");
-    message.textContent = titulo;
-    // Detalles
-    const details = document.createElement("div");
-    details.classList.add("details");
-    details.textContent = detalles;
-    // Botones
-    const buttons = document.createElement("div");
-    buttons.classList.add("buttons");
-    const acceptButton = document.createElement("button");
-    acceptButton.classList.add("accept-button");
-    acceptButton.textContent = "Aceptar";
-    const rejectButton = document.createElement("button");
-    rejectButton.classList.add("reject-button");
-    rejectButton.textContent = "Rechazar";
-    /* ========================================
-       ARMAR PEDIDO
-       ======================================== */
-    buttons.appendChild(acceptButton);
-    buttons.appendChild(rejectButton);
-    messageContent.appendChild(message);
-    messageContent.appendChild(details);
-    messageContent.appendChild(buttons);
-    mensaje.appendChild(time);
-    mensaje.appendChild(indicator);
-    mensaje.appendChild(messageContent);
-    /* ========================================
-       AGREGAR AL CONTENEDOR
-       ======================================== */
-    contenedor.appendChild(mensaje);
-    /* ========================================
+
+    /* =====================================================
+       VALIDAR COORDENADAS
+       ===================================================== */
+
+    if (
+        typeof lat !== "number" ||
+        typeof lng !== "number"
+    ) {
+
+        console.error(
+            "El pedido necesita lat y lng válidos."
+        );
+
+        return;
+
+    }
+
+
+    /* =====================================================
+       CONTENEDOR DE PEDIDOS
+       ===================================================== */
+
+    const contenedor =
+        document.getElementById(
+            "display-message"
+        );
+
+
+    if (!contenedor) {
+
+        console.error(
+            "No existe #display-message en el HTML."
+        );
+
+        return;
+
+    }
+
+
+    /* =====================================================
+       CREAR TARJETA
+       ===================================================== */
+
+    const mensaje =
+        document.createElement("div");
+
+    mensaje.classList.add(
+        "mensaje"
+    );
+
+
+    /* =====================================================
        TIMER
-       ======================================== */
-    let tiempoRestante = tiempo;
-    time.style.transition = `width ${tiempo}s linear`;
-    // Inicia lleno
-    time.style.width = "100%";
-    // Pequeño delay para que CSS detecte
-    // el cambio y comience la animación
-    setTimeout(() => {
-        time.style.width = "0%";
-    }, 50);
-    /* ========================================
-       CUANDO TERMINA EL TIMER
-       ======================================== */
-    const timer = setInterval(() => {
-        tiempoRestante--;
-        if (tiempoRestante <= 0) {
-            clearInterval(timer);
-            // Eliminar automáticamente
-            mensaje.remove();
+       ===================================================== */
+
+    const time =
+        document.createElement("div");
+
+    time.classList.add(
+        "time"
+    );
+
+
+    /* =====================================================
+       INDICADOR DE PRIORIDAD
+       ===================================================== */
+
+    const indicator =
+        document.createElement("div");
+
+    indicator.classList.add(
+        "indicator"
+    );
+
+    indicator.style.backgroundColor =
+        prioridad;
+
+
+    /* =====================================================
+       CONTENIDO
+       ===================================================== */
+
+    const messageContent =
+        document.createElement("div");
+
+    messageContent.classList.add(
+        "message-content"
+    );
+
+
+    /* =====================================================
+       TÍTULO
+       ===================================================== */
+
+    const message =
+        document.createElement("div");
+
+    message.classList.add(
+        "message"
+    );
+
+    message.textContent =
+        titulo;
+
+
+    /* =====================================================
+       DETALLES
+       ===================================================== */
+
+    const details =
+        document.createElement("div");
+
+    details.classList.add(
+        "details"
+    );
+
+    details.textContent =
+        detalles;
+
+
+    /* =====================================================
+       DIRECCIÓN
+       ===================================================== */
+
+    const address =
+        document.createElement("div");
+
+    address.classList.add(
+        "address"
+    );
+
+    address.textContent =
+        "📍 Buscando dirección...";
+
+
+    /* =====================================================
+       BOTONES
+       ===================================================== */
+
+    const buttons =
+        document.createElement("div");
+
+    buttons.classList.add(
+        "buttons"
+    );
+
+
+    const acceptButton =
+        document.createElement("button");
+
+    acceptButton.classList.add(
+        "accept-button"
+    );
+
+    acceptButton.textContent =
+        "Aceptar";
+
+
+    const rejectButton =
+        document.createElement("button");
+
+    rejectButton.classList.add(
+        "reject-button"
+    );
+
+    rejectButton.textContent =
+        "Rechazar";
+
+
+    /* =====================================================
+       ARMAR BOTONES
+       ===================================================== */
+
+    buttons.appendChild(
+        acceptButton
+    );
+
+    buttons.appendChild(
+        rejectButton
+    );
+
+
+    /* =====================================================
+       ARMAR CONTENIDO
+       ===================================================== */
+
+    messageContent.appendChild(
+        message
+    );
+
+    messageContent.appendChild(
+        details
+    );
+
+    messageContent.appendChild(
+        address
+    );
+
+    messageContent.appendChild(
+        buttons
+    );
+
+
+    /* =====================================================
+       ARMAR MENSAJE COMPLETO
+       ===================================================== */
+
+    mensaje.appendChild(
+        time
+    );
+
+    mensaje.appendChild(
+        indicator
+    );
+
+    mensaje.appendChild(
+        messageContent
+    );
+
+
+    /* =====================================================
+       AGREGAR A LA PANTALLA
+       ===================================================== */
+
+    contenedor.appendChild(
+        mensaje
+    );
+
+
+    /* =====================================================
+       CREAR MARCADOR
+       =====================================================
+
+       IMPORTANTE:
+
+       MapLibre utiliza:
+
+       [longitud, latitud]
+
+       NO:
+
+       [latitud, longitud]
+
+       ===================================================== */
+
+    const marcador =
+        new maplibregl.Marker({
+
+            color: prioridad
+
+        })
+
+        .setLngLat([
+            lng,
+            lat
+        ])
+
+        .addTo(map);
+
+
+    /* =====================================================
+       GUARDAR DATOS EN LA TARJETA
+       ===================================================== */
+
+    mensaje.dataset.lat =
+        lat;
+
+    mensaje.dataset.lng =
+        lng;
+
+
+    /*
+       Guardamos referencia al marcador
+       para poder eliminarlo después.
+    */
+
+    mensaje.marcador =
+        marcador;
+
+
+    /* =====================================================
+       OBTENER DIRECCIÓN
+       ===================================================== */
+
+    obtenerDireccion(
+        lat,
+        lng
+    )
+
+    .then(
+        direccion => {
+
+            address.textContent =
+                "📍 " + direccion;
+
         }
-    }, 1000);
-    /* ========================================
+    )
+
+    .catch(
+        error => {
+
+            console.error(
+                "Error obteniendo dirección:",
+                error
+            );
+
+            address.textContent =
+                "📍 Dirección no disponible";
+
+        }
+    );
+
+
+    /* =====================================================
+       TIMER
+       ===================================================== */
+
+    let tiempoRestante =
+        tiempo;
+
+
+    /*
+       Barra llena
+    */
+
+    time.style.width =
+        "100%";
+
+
+    /*
+       Animación de la barra
+    */
+
+    time.style.transition =
+        `width ${tiempo}s linear`;
+
+
+    /*
+       Esperamos un poco antes de
+       empezar la animación.
+    */
+
+    setTimeout(
+        () => {
+
+            time.style.width =
+                "0%";
+
+        },
+        50
+    );
+
+
+    /* =====================================================
+       CONTADOR
+       ===================================================== */
+
+    const timer =
+        setInterval(
+            () => {
+
+                tiempoRestante--;
+
+
+                /*
+                   ¿Se acabó el tiempo?
+                */
+
+                if (
+                    tiempoRestante <= 0
+                ) {
+
+                    eliminarPedido();
+
+                }
+
+            },
+            1000
+        );
+
+
+    /* =====================================================
+       FUNCIÓN ELIMINAR PEDIDO
+       ===================================================== */
+
+    function eliminarPedido() {
+
+
+        /*
+           Detener el contador
+        */
+
+        clearInterval(
+            timer
+        );
+
+
+        /*
+           Eliminar marcador
+        */
+
+        if (
+            mensaje.marcador
+        ) {
+
+            mensaje.marcador.remove();
+
+        }
+
+
+        /*
+           Eliminar tarjeta
+        */
+
+        mensaje.remove();
+
+    }
+
+
+    /* =====================================================
        BOTÓN ACEPTAR
-       ======================================= */
-    acceptButton.addEventListener("click", () => {
-        console.log("Pedido aceptado:", titulo);
-        clearInterval(timer);
-        mensaje.remove();
-    });
-    /* ========================================
+       ===================================================== */
+
+    acceptButton.addEventListener(
+        "click",
+        () => {
+            console.log(
+                "Pedido aceptado:",
+                titulo
+            );
+            console.log(
+                "Coordenadas:",
+                lat,
+                lng
+            );
+
+
+            eliminarPedido();
+
+        }
+    );
+
+
+    /* =====================================================
        BOTÓN RECHAZAR
-       ======================================== */
-    rejectButton.addEventListener("click", () => {
-        console.log("Pedido rechazado:", titulo);
-        clearInterval(timer);
-        mensaje.remove();
-    });
-    /* ========================================
-       DEVOLVER EL ELEMENTO
-       ======================================== */
+       ===================================================== */
+
+    rejectButton.addEventListener(
+        "click",
+        () => {
+            console.log(
+                "Pedido rechazado:",
+                titulo
+            );
+            eliminarPedido();
+        }
+    );
+
+
+    /* =====================================================
+       CLICK EN LA TARJETA
+       =====================================================
+
+       Al tocar el pedido podemos centrar
+       el mapa en sus coordenadas.
+       ===================================================== */
+
+    mensaje.addEventListener(
+        "click",
+        (evento) => {
+
+
+            /*
+               No mover el mapa cuando se
+               presionan los botones.
+            */
+
+            if (
+                evento.target.tagName ===
+                "BUTTON"
+            ) {
+
+                return;
+
+            }
+
+
+            map.flyTo({
+
+                center: [
+                    lng,
+                    lat
+                ],
+
+                zoom: 16,
+
+                duration: 1000
+
+            });
+
+        }
+    );
+
+
+    /* =====================================================
+       CLICK EN EL MARCADOR
+       ===================================================== */
+
+    marcador
+        .getElement()
+        .addEventListener(
+            "click",
+            () => {
+
+                /*
+                   Llevar la tarjeta al frente
+                   desplazándola dentro del contenedor.
+                */
+
+                mensaje.scrollIntoView({
+
+                    behavior: "smooth",
+
+                    block: "nearest"
+
+                });
+
+            }
+        );
+
+
+    /* =====================================================
+       DEVOLVER TARJETA
+       ===================================================== */
+
     return mensaje;
+
 }
+
+
+/* =========================================================
+   OBTENER DIRECCIÓN DESDE COORDENADAS
+   =========================================================
+
+   Convierte:
+
+   lat = 25.6866
+   lng = -100.3161
+
+   en una dirección legible.
+
+   ========================================================= */
+
+async function obtenerDireccion(
+    lat,
+    lng
+) {
+    const url =
+        `https://nominatim.openstreetmap.org/reverse` +
+        `?format=json` +
+        `&lat=${lat}` +
+        `&lon=${lng}` +
+        `&zoom=18` +
+        `&addressdetails=1`;
+    const respuesta =
+        await fetch(
+            url,
+            {
+                headers: {
+                    "Accept":
+                        "application/json"
+                }
+            }
+        );
+    if (
+        !respuesta.ok
+    ) {
+        throw new Error(
+            "No se pudo obtener la dirección."
+        );
+
+    }
+    const datos =
+        await respuesta.json();
+    /*
+       display_name contiene la dirección
+       completa.
+    */
+    return datos.display_name;
+
+}
+
+
 
 
 
@@ -388,6 +855,30 @@ crearPedido({
     prioridad: "#ff0000",
     tiempo: 30,
     titulo: "Pedido #001",
-    detalles: "Recoger paquete en Plaza Fiesta y entregarlo en San Pedro."
+    detalles:
+        "Recoger paquete y entregarlo al cliente.",
+    lat: 25.6866,
+    lng: -100.3161
 });
 
+
+crearPedido({
+    prioridad: "#ff9800",
+    tiempo: 30,
+    titulo: "Pedido #002",
+    detalles:
+        "Recoger comida en el restaurante.",
+    lat: 25.6712,
+    lng: -100.3098
+});
+
+
+crearPedido({
+    prioridad: "#00c853",
+    tiempo: 30,
+    titulo: "Pedido #003",
+    detalles:
+        "Paquete pequeño. Dejar en recepción.",
+    lat: 25.6940,
+    lng: -100.3270
+});
