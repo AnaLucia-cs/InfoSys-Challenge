@@ -32,3 +32,18 @@ def move_towards(current_lat: float, current_lon: float, target_lat: float, targ
     new_lat = current_lat + (target_lat - current_lat) * fraction
     new_lon = current_lon + (target_lon - current_lon) * fraction
     return new_lat, new_lon
+
+import math
+
+def haversine_distance(lat1, lon1, lat2, lon2):
+    R = 6371.0  # Radio de la Tierra en km
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = math.sin(dlat / 2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
+
+def evaluate_order_profitability(distance_km, payout_mxn, fuel_price_per_liter=24.50, km_per_liter=35.0):
+    fuel_cost = (distance_km / km_per_liter) * fuel_price_per_liter
+    net_profit = payout_mxn - fuel_cost
+    return round(net_profit, 2)

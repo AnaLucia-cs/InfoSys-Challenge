@@ -1,40 +1,18 @@
-from flask import Flask, render_template, request
+import os
+from flask import Flask, render_template, jsonify
+from modules.simulation import ShiftSimulator
 
+app = Flask(__name__)
+simulator = ShiftSimulator()
 
-def create_app() -> Flask:
-    app = Flask(__name__)
+@app.route('/')
+def index():
+    return render_template('main.html')
 
-    @app.route("/")
-    def home() -> str:
-        return render_template("main.html")
+@app.route('/api/tick')
+def get_tick():
+    current_state = simulator.advance_tick()
+    return jsonify(current_state.model_dump())
 
-    @app.route('/ubi_repartidor_inicial', methods=['POST'])
-    def guardar_punto():
-
-        datos = request.get_json()
-
-        lat = datos['lat']
-        lon = datos['lon']
-
-        print("Latitud:", lat)
-        print("Longitud:", lon)
-
-        return "Punto recibido"
-
-
-
-
-    @app.get("/health")
-    def health() -> tuple[dict[str, str], int]:
-        return {"status": "ok"}, 200
-
-    return app
-
-
-
-
-app = create_app()
-
-
-if __name__ == "__main__":
-    app.run(debug=True)
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)
