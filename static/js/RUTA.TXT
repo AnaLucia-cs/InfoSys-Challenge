@@ -1,0 +1,253 @@
+
+// =========================================================
+// CALCULAR RUTA
+// =========================================================
+async function calcularRuta(
+    origen,
+    destino,
+    idRuta = "ruta"
+) {
+
+    const url =
+        `https://router.project-osrm.org/route/v1/driving/` +
+        `${origen[0]},${origen[1]};` +
+        `${destino[0]},${destino[1]}` +
+        `?steps=true&geometries=geojson&overview=full`;
+
+
+    try {
+        const respuesta =
+            await fetch(url);
+        const datos =
+            await respuesta.json();
+        if (datos.code !== "Ok") {
+            console.error(
+                "No se encontró una ruta."
+            );
+            return;
+
+        }
+
+
+        const ruta =
+            datos.routes[0];
+
+
+        // =================================================
+        // INFORMACIÓN DE LA RUTA
+        // =================================================
+
+        console.log(
+            "=============================="
+        );
+
+        console.log(
+            "RUTA ENCONTRADA"
+        );
+
+        console.log(
+            "=============================="
+        );
+
+
+        console.log(
+            "Ruta:",
+            idRuta
+        );
+
+
+        console.log(
+            "Distancia:",
+            ruta.distance,
+            "metros"
+        );
+
+
+        console.log(
+            "Duración:",
+            ruta.duration,
+            "segundos"
+        );
+
+
+        // =================================================
+        // CALLES Y MANIOBRAS
+        // =================================================
+
+        console.log(
+            "=============================="
+        );
+
+        console.log(
+            "INSTRUCCIONES"
+        );
+
+        console.log(
+            "=============================="
+        );
+
+
+        ruta.legs[0].steps.forEach(
+
+            (step, indice) => {
+
+                console.log(
+
+                    indice,
+
+                    "Calle:",
+                    step.name,
+
+                    "| Distancia:",
+                    step.distance,
+
+                    "| Maniobra:",
+                    step.maneuver.type,
+
+                    "| Dirección:",
+                    step.maneuver.modifier
+
+                );
+
+            }
+
+        );
+
+
+        // =================================================
+        // GEOJSON
+        // =================================================
+
+        const geojson = {
+
+            type: 'Feature',
+
+            geometry: ruta.geometry
+
+        };
+
+
+        // =================================================
+        // ACTUALIZAR RUTA SI YA EXISTE
+        // =================================================
+
+        if (map.getSource(idRuta)) {
+
+            map.getSource(idRuta)
+                .setData(geojson);
+
+        }
+
+
+        // =================================================
+        // CREAR RUTA SI NO EXISTE
+        // =================================================
+
+        else {
+
+            map.addSource(
+
+                idRuta,
+
+                {
+
+                    type: 'geojson',
+
+                    data: geojson
+
+                }
+
+            );
+
+
+            map.addLayer({
+
+                id: idRuta,
+
+                type: 'line',
+
+                source: idRuta,
+
+                paint: {
+
+                    'line-color':
+
+                        idRuta === "ruta-repartidor-recogida"
+
+                            ? '#2196F3'
+
+                            : '#FF0000',
+
+                    'line-width': 6
+
+                }
+
+            });
+
+        }
+
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Error al calcular la ruta:",
+            error
+        );
+
+    }
+
+}
+
+
+// =====================================================
+    // CALCULAR RUTA:
+    // REPARTIDOR → RECOGIDA
+    // =====================================================
+
+    await calcularRuta(
+
+        ubicacionRepartidor,
+
+        [
+
+            pedidoAceptado.recogidaLng,
+
+            pedidoAceptado.recogidaLat
+
+        ],
+
+        "ruta-repartidor-recogida"
+
+    );
+
+
+    // =====================================================
+    // CALCULAR RUTA:
+    // RECOGIDA → DESTINO
+    // =====================================================
+
+    await calcularRuta(
+
+        [
+
+            pedidoAceptado.recogidaLng,
+
+            pedidoAceptado.recogidaLat
+
+        ],
+
+        [
+
+            pedidoAceptado.destinoLng,
+
+            pedidoAceptado.destinoLat
+
+        ],
+
+        "ruta-recogida-destino"
+
+    );
+
+

@@ -1,5 +1,12 @@
+// =========================================================
+// PEDIDOS ACTIVOS
+// =========================================================
 const pedidosActivos = new Set();
-//CREAR MAPA DE MTY
+
+
+// =========================================================
+// CREAR MAPA DE MTY
+// =========================================================
 const map = new maplibregl.Map({
     container: 'map',
     style: 'https://tiles.openfreemap.org/styles/liberty',
@@ -8,72 +15,114 @@ const map = new maplibregl.Map({
 });
 
 
-// ======================================
-// MARCADOR DEL ORIGEN INEXISTENTE
-// ======================================
+// =========================================================
+// UBI Y MARCADOR DEL REPARTIDOR
+// =========================================================
 let marcadorOrigen = null;
-// HACER CLICK EN EL MAPA
-// ======================================
+let ubicacionRepartidor = null;
+
+
+// =========================================================
+// CLICK EN MAPA = SELECCIONAR UBICACIÓN DEL REPARTIDOR
+// =========================================================
 map.on('click', async function (e) {
+
     const lon = e.lngLat.lng;
     const lat = e.lngLat.lat;
-    // ==================================
-    // BUSCAR LA CALLE MÁS CERCANA
-    // ==================================
+
     const url =
         `https://router.project-osrm.org/nearest/v1/driving/` +
         `${lon},${lat}`;
 
     try {
-        const respuesta = await fetch(url);
-        const datos = await respuesta.json();
+
+        const respuesta =
+            await fetch(url);
+
+        const datos =
+            await respuesta.json();
 
         if (datos.code !== "Ok") {
-            console.error("No se encontró una calle cercana.");
+
+            console.error(
+                "No se encontró una calle cercana."
+            );
+
             return;
         }
 
 
-        // Coordenadas corregidas sobre la calle
+        // =================================================
+        // COORDENADAS CORREGIDAS SOBRE LA CALLE
+        // =================================================
         const nuevoOrigen =
             datos.waypoints[0].location;
 
         console.log(
-            "Nuevo origen:",
+            "Nuevo origen / repartidor:",
             nuevoOrigen
         );
 
 
-        // ==================================
-        // ACTUALIZAR MARCADOR
-        // ==================================
+        // =================================================
+        // GUARDAR UBICACIÓN DEL REPARTIDOR
+        // =================================================
+        ubicacionRepartidor =
+            nuevoOrigen;
 
+
+        // =================================================
+        // ACTUALIZAR MARCADOR
+        // =================================================
         if (marcadorOrigen !== null) {
 
             marcadorOrigen
                 .setLngLat(nuevoOrigen);
 
-        } else {
+        }
 
+        else {
+
+            // =================================================
+            // CREAR ELEMENTO DEL REPARTIDOR
+            // =================================================
+            const elRepartidor =
+                document.createElement("div");
+
+            elRepartidor.textContent =
+                "🏍️";
+
+            elRepartidor.style.fontSize =
+                "32px";
+
+            elRepartidor.style.cursor =
+                "pointer";
+
+            elRepartidor.style.userSelect =
+                "none";
+
+
+            // =================================================
+            // CREAR MARCADOR
+            // =================================================
             marcadorOrigen =
-                new maplibregl.Marker()
-                    .setLngLat(nuevoOrigen)
-                    .addTo(map);
-
+                new maplibregl.Marker({
+                    element: elRepartidor,
+                    anchor: "center"
+                })
+                .setLngLat(nuevoOrigen)
+                .addTo(map);
         }
 
 
-        // ==================================
-        // REGENERAR RUTA
-        // ==================================
-
-        calcularRuta(
-            nuevoOrigen,
-            destino
+        console.log(
+            "Repartidor seleccionado:",
+            ubicacionRepartidor
         );
 
+    }
 
-    } catch (error) {
+    catch (error) {
 
         console.error(
             "Error al buscar la calle:",
@@ -85,163 +134,118 @@ map.on('click', async function (e) {
 });
 
 
-// ======================================
-// CALCULAR RUTA
-// ======================================
+// =========================================================
+// CREAR MARCADOR CON EMOJI + NÚMERO
+// =========================================================
+function crearMarcadorEmoji(
+    emoji,
+    numero,
+    coordenadas,
+    anchor = "bottom"
+) {
 
-async function calcularRuta(origen, destino) {
+    // =====================================================
+    // CONTENEDOR
+    // =====================================================
+    const elemento =
+        document.createElement("div");
 
-    const url =
-        `https://router.project-osrm.org/route/v1/driving/` +
-        `${origen[0]},${origen[1]};` +
-        `${destino[0]},${destino[1]}` +
-        `?steps=true&geometries=geojson&overview=full`;
+    elemento.style.display =
+        "flex";
 
+    elemento.style.flexDirection =
+        "column";
 
-    try {
+    elemento.style.alignItems =
+        "center";
 
-        const respuesta = await fetch(url);
-        const datos = await respuesta.json();
+    elemento.style.cursor =
+        "pointer";
 
-
-        if (datos.code !== "Ok") {
-
-            console.error(
-                "No se encontró una ruta."
-            );
-
-            return;
-
-        }
-
-
-        const ruta = datos.routes[0];
-
-
-        // ==================================
-        // INFORMACIÓN DE LA RUTA
-        // ==================================
-
-        console.log("==============================");
-        console.log("RUTA ENCONTRADA");
-        console.log("==============================");
-
-        console.log(
-            "Distancia:",
-            ruta.distance,
-            "metros"
-        );
-
-        console.log(
-            "Duración:",
-            ruta.duration,
-            "segundos"
-        );
+    elemento.style.userSelect =
+        "none";
 
 
-        // ==================================
-        // CALLES Y MANIOBRAS
-        // ==================================
+    // =====================================================
+    // EMOJI
+    // =====================================================
+    const icono =
+        document.createElement("div");
 
-        console.log("==============================");
-        console.log("INSTRUCCIONES");
-        console.log("==============================");
+    icono.textContent =
+        emoji;
 
+    icono.style.fontSize =
+        "32px";
 
-        ruta.legs[0].steps.forEach(
-            (step, indice) => {
-
-                console.log(
-                    indice,
-                    "Calle:",
-                    step.name,
-                    "| Distancia:",
-                    step.distance,
-                    "| Maniobra:",
-                    step.maneuver.type,
-                    "| Dirección:",
-                    step.maneuver.modifier
-                );
-
-            }
-        );
+    icono.style.lineHeight =
+        "1";
 
 
-        // ==================================
-        // ACTUALIZAR RUTA EN EL MAPA
-        // ==================================
+    // =====================================================
+    // NÚMERO DEL PEDIDO
+    // =====================================================
+    const numeroElemento =
+        document.createElement("div");
 
-        const geojson = {
+    numeroElemento.textContent =
+        `#${numero}`;
 
-            type: 'Feature',
+    numeroElemento.style.backgroundColor =
+        "#ffffff";
 
-            geometry: ruta.geometry
+    numeroElemento.style.color =
+        "#222222";
 
-        };
+    numeroElemento.style.fontSize =
+        "12px";
 
+    numeroElemento.style.fontWeight =
+        "bold";
 
-        // Si la ruta ya existe,
-        // solamente la actualizamos
+    numeroElemento.style.padding =
+        "2px 6px";
 
-        if (map.getSource('ruta')) {
+    numeroElemento.style.borderRadius =
+        "8px";
 
-            map.getSource('ruta')
-                .setData(geojson);
+    numeroElemento.style.boxShadow =
+        "0 1px 5px rgba(0,0,0,0.35)";
 
-        }
+    numeroElemento.style.marginTop =
+        "2px";
 
-        // Si todavía no existe,
-        // la creamos
-
-        else {
-
-            map.addSource('ruta', {
-
-                type: 'geojson',
-
-                data: geojson
-
-            });
-
-
-            map.addLayer({
-
-                id: 'ruta',
-
-                type: 'line',
-
-                source: 'ruta',
-
-                paint: {
-
-                    'line-color': '#30a98d',
-
-                    'line-width': 6
-
-                }
-
-            });
-
-        }
+    numeroElemento.style.whiteSpace =
+        "nowrap";
 
 
-    } catch (error) {
+    // =====================================================
+    // ARMAR ELEMENTO
+    // =====================================================
+    elemento.appendChild(
+        icono
+    );
 
-        console.error(
-            "Error al calcular la ruta:",
-            error
-        );
+    elemento.appendChild(
+        numeroElemento
+    );
 
-    }
 
+    // =====================================================
+    // CREAR MARKER
+    // =====================================================
+    return new maplibregl.Marker({
+        element: elemento,
+        anchor: anchor
+    })
+    .setLngLat(coordenadas)
+    .addTo(map);
 }
 
 
-
-/* =========================================================
-   CREAR PEDIDO
-   ========================================================= */
-
+// =========================================================
+// CREAR PEDIDO
+// =========================================================
 function crearPedido({
 
     id = null,
@@ -254,44 +258,59 @@ function crearPedido({
 
     detalles = "",
 
-    lat,
+    // =====================================================
+    // UBICACIÓN DE RECOGIDA
+    // =====================================================
+    recogidaLat,
 
-    lng
+    recogidaLng,
+
+    // =====================================================
+    // UBICACIÓN DE DESTINO
+    // =====================================================
+    destinoLat,
+
+    destinoLng
 
 }) {
 
-    /* =====================================================
-       VALIDAR DATOS
-       ===================================================== */
 
+    // =====================================================
+    // VALIDAR COORDENADAS
+    // =====================================================
     if (
-        typeof lat !== "number" ||
-        typeof lng !== "number"
+
+        typeof recogidaLat !== "number" ||
+
+        typeof recogidaLng !== "number" ||
+
+        typeof destinoLat !== "number" ||
+
+        typeof destinoLng !== "number"
+
     ) {
 
         console.error(
-            "El pedido necesita coordenadas válidas."
+            "El pedido necesita coordenadas " +
+            "válidas de recogida y destino."
         );
 
         return;
-
     }
 
 
-    /* =====================================================
-       CONTENEDOR
-       ===================================================== */
-
+    // =====================================================
+    // CONTENEDOR
+    // =====================================================
     const contenedor =
         document.getElementById(
             "display-message"
         );
 
 
-    /* =====================================================
-       TARJETA
-       ===================================================== */
-
+    // =====================================================
+    // TARJETA
+    // =====================================================
     const mensaje =
         document.createElement("div");
 
@@ -300,10 +319,9 @@ function crearPedido({
     );
 
 
-    /* =====================================================
-       TIMER
-       ===================================================== */
-
+    // =====================================================
+    // TIMER
+    // =====================================================
     const time =
         document.createElement("div");
 
@@ -312,10 +330,9 @@ function crearPedido({
     );
 
 
-    /* =====================================================
-       PRIORIDAD
-       ===================================================== */
-
+    // =====================================================
+    // PRIORIDAD
+    // =====================================================
     const indicator =
         document.createElement("div");
 
@@ -327,10 +344,9 @@ function crearPedido({
         prioridad;
 
 
-    /* =====================================================
-       CONTENIDO
-       ===================================================== */
-
+    // =====================================================
+    // CONTENIDO
+    // =====================================================
     const messageContent =
         document.createElement("div");
 
@@ -339,10 +355,9 @@ function crearPedido({
     );
 
 
-    /* =====================================================
-       TÍTULO
-       ===================================================== */
-
+    // =====================================================
+    // TÍTULO
+    // =====================================================
     const message =
         document.createElement("div");
 
@@ -354,10 +369,9 @@ function crearPedido({
         titulo;
 
 
-    /* =====================================================
-       DETALLES
-       ===================================================== */
-
+    // =====================================================
+    // DETALLES
+    // =====================================================
     const details =
         document.createElement("div");
 
@@ -369,25 +383,37 @@ function crearPedido({
         detalles;
 
 
-    /* =====================================================
-       DIRECCIÓN
-       ===================================================== */
-
-    const address =
+    // =====================================================
+    // DIRECCIÓN DE RECOGIDA
+    // =====================================================
+    const addressRecogida =
         document.createElement("div");
 
-    address.classList.add(
+    addressRecogida.classList.add(
         "address"
     );
 
-    address.textContent =
-        "📍 Buscando dirección...";
+    addressRecogida.textContent =
+        "📍 Recogida: Buscando dirección...";
 
 
-    /* =====================================================
-       BOTONES
-       ===================================================== */
+    // =====================================================
+    // DIRECCIÓN DE DESTINO
+    // =====================================================
+    const addressDestino =
+        document.createElement("div");
 
+    addressDestino.classList.add(
+        "address"
+    );
+
+    addressDestino.textContent =
+        "🏁 Destino: Buscando dirección...";
+
+
+    // =====================================================
+    // BOTONES
+    // =====================================================
     const buttons =
         document.createElement("div");
 
@@ -396,6 +422,9 @@ function crearPedido({
     );
 
 
+    // =====================================================
+    // BOTÓN ACEPTAR
+    // =====================================================
     const acceptButton =
         document.createElement("button");
 
@@ -407,6 +436,9 @@ function crearPedido({
         "Aceptar";
 
 
+    // =====================================================
+    // BOTÓN RECHAZAR
+    // =====================================================
     const rejectButton =
         document.createElement("button");
 
@@ -418,10 +450,9 @@ function crearPedido({
         "Rechazar";
 
 
-    /* =====================================================
-       ARMAR TARJETA
-       ===================================================== */
-
+    // =====================================================
+    // ARMAR BOTONES
+    // =====================================================
     buttons.appendChild(
         acceptButton
     );
@@ -431,6 +462,9 @@ function crearPedido({
     );
 
 
+    // =====================================================
+    // ARMAR CONTENIDO
+    // =====================================================
     messageContent.appendChild(
         message
     );
@@ -440,7 +474,11 @@ function crearPedido({
     );
 
     messageContent.appendChild(
-        address
+        addressRecogida
+    );
+
+    messageContent.appendChild(
+        addressDestino
     );
 
     messageContent.appendChild(
@@ -448,6 +486,9 @@ function crearPedido({
     );
 
 
+    // =====================================================
+    // ARMAR TARJETA
+    // =====================================================
     mensaje.appendChild(
         time
     );
@@ -461,92 +502,152 @@ function crearPedido({
     );
 
 
+    // =====================================================
+    // AGREGAR TARJETA AL DOM
+    // =====================================================
     contenedor.appendChild(
         mensaje
     );
 
 
-    /* =====================================================
-       MARCADOR
-       ===================================================== */
+    // =====================================================
+    // MARCADOR DE RECOGIDA
+    // =====================================================
+    const marcadorRecogida =
+        crearMarcadorEmoji(
 
-    const marcador =
-        new maplibregl.Marker({
+            "📦",
 
-            color: prioridad
+            id,
 
-        })
+            [
+                recogidaLng,
+                recogidaLat
+            ],
 
-        .setLngLat([
-            lng,
-            lat
-        ])
+            "bottom"
 
-        .addTo(map);
+        );
 
 
-    /* =====================================================
-       OBJETO PEDIDO
-       ===================================================== */
+    // =====================================================
+    // MARCADOR DE DESTINO
+    // =====================================================
+    const marcadorDestino =
+        crearMarcadorEmoji(
 
+            "📍",
+
+            id,
+
+            [
+                destinoLng,
+                destinoLat
+            ],
+
+            "bottom"
+
+        );
+
+
+    // =====================================================
+    // OBJETO PEDIDO
+    // =====================================================
     const pedido = {
 
-        id: id,
+        id:
+            id,
 
-        titulo: titulo,
+        titulo:
+            titulo,
 
-        detalles: detalles,
+        detalles:
+            detalles,
 
-        prioridad: prioridad,
+        prioridad:
+            prioridad,
 
-        tiempo: tiempo,
+        tiempo:
+            tiempo,
 
-        lat: lat,
 
-        lng: lng,
+        // ================================================
+        // RECOGIDA
+        // ================================================
+        recogidaLat:
+            recogidaLat,
 
-        mensaje: mensaje,
+        recogidaLng:
+            recogidaLng,
 
-        marcador: marcador,
 
-        timer: null,
+        // ================================================
+        // DESTINO
+        // ================================================
+        destinoLat:
+            destinoLat,
 
-        aceptado: false
+        destinoLng:
+            destinoLng,
 
+
+        // ================================================
+        // ELEMENTOS
+        // ================================================
+        mensaje:
+            mensaje,
+
+        marcadorRecogida:
+            marcadorRecogida,
+
+        marcadorDestino:
+            marcadorDestino,
+
+
+        // ================================================
+        // TIMER
+        // ================================================
+        timer:
+            null,
+
+
+        // ================================================
+        // ESTADO
+        // ================================================
+        aceptado:
+            false
     };
 
 
-    /* =====================================================
-       GUARDAR PEDIDO
-       ===================================================== */
-
+    // =====================================================
+    // GUARDAR PEDIDO
+    // =====================================================
     pedidosActivos.add(
         pedido
     );
 
 
-    /* =====================================================
-       GUARDAR REFERENCIA
-       ===================================================== */
-
+    // =====================================================
+    // GUARDAR REFERENCIA
+    // =====================================================
     mensaje.pedido =
         pedido;
 
 
-    /* =====================================================
-       DIRECCIÓN
-       ===================================================== */
-
+    // =====================================================
+    // OBTENER DIRECCIÓN DE RECOGIDA
+    // =====================================================
     obtenerDireccion(
-        lat,
-        lng
+        recogidaLat,
+        recogidaLng
     )
 
     .then(
         direccion => {
 
-            address.textContent =
-                "📍 " + direccion;
+            addressRecogida.textContent =
+                "📍 Recogida: " +
+                direccion;
 
         }
     )
@@ -558,17 +659,48 @@ function crearPedido({
                 error
             );
 
-            address.textContent =
-                "📍 Dirección no disponible";
+            addressRecogida.textContent =
+                "📍 Recogida: Dirección no disponible";
 
         }
     );
 
 
-    /* =====================================================
-       TIMER
-       ===================================================== */
+    // =====================================================
+    // OBTENER DIRECCIÓN DE DESTINO
+    // =====================================================
+    obtenerDireccion(
+        destinoLat,
+        destinoLng
+    )
 
+    .then(
+        direccion => {
+
+            addressDestino.textContent =
+                "🏁 Destino: " +
+                direccion;
+
+        }
+    )
+
+    .catch(
+        error => {
+
+            console.error(
+                error
+            );
+
+            addressDestino.textContent =
+                "🏁 Destino: Dirección no disponible";
+
+        }
+    );
+
+
+    // =====================================================
+    // TIMER
+    // =====================================================
     let tiempoRestante =
         tiempo;
 
@@ -598,7 +730,6 @@ function crearPedido({
 
                 tiempoRestante--;
 
-
                 if (
                     tiempoRestante <= 0
                 ) {
@@ -614,10 +745,9 @@ function crearPedido({
         );
 
 
-    /* =====================================================
-       ACEPTAR
-       ===================================================== */
-
+    // =====================================================
+    // ACEPTAR
+    // =====================================================
     acceptButton.addEventListener(
         "click",
         () => {
@@ -630,10 +760,9 @@ function crearPedido({
     );
 
 
-    /* =====================================================
-       RECHAZAR
-       ===================================================== */
-
+    // =====================================================
+    // RECHAZAR
+    // =====================================================
     rejectButton.addEventListener(
         "click",
         () => {
@@ -646,50 +775,127 @@ function crearPedido({
     );
 
 
-    /* =====================================================
-       CLICK EN TARJETA
-       ===================================================== */
+// =====================================================
+// CLICK EN TARJETA
+// CENTRAR REPARTIDOR + RECOGIDA + DESTINO
+// =====================================================
+mensaje.addEventListener(
+    "click",
+    evento => {
 
-    mensaje.addEventListener(
-        "click",
-        evento => {
-
-            if (
-                evento.target.tagName ===
-                "BUTTON"
-            ) {
-
-                return;
-
-            }
-
-
-            map.flyTo({
-
-                center: [
-                    lng,
-                    lat
-                ],
-
-                zoom: 16,
-
-                duration: 1000
-
-            });
-
+        // =============================================
+        // SI PICÓ UN BOTÓN, NO CENTRAR
+        // =============================================
+        if (
+            evento.target.tagName ===
+            "BUTTON"
+        ) {
+            return;
         }
-    );
-
-
+        // =============================================
+        // CENTRAR LOS 3 ELEMENTOS
+        // =============================================
+        enfocarPedidoCompleto(
+            pedido
+        );
+    }
+);
     return mensaje;
-
 }
 
 
-/* =========================================================
-   ACEPTAR PEDIDO
-   ========================================================= */
+// =========================================================
+// ENFOCAR REPARTIDOR + RECOGIDA + DESTINO
+// =========================================================
+function enfocarPedidoCompleto(
+    pedido
+) {
 
+    // =====================================================
+    // VERIFICAR REPARTIDOR
+    // =====================================================
+    if (
+        !ubicacionRepartidor
+    ) {
+
+        console.error(
+            "No existe ubicación del repartidor."
+        );
+
+        return;
+    }
+
+
+    // =====================================================
+    // CREAR BOUNDS
+    // =====================================================
+    const bounds =
+        new maplibregl.LngLatBounds();
+
+
+    // =====================================================
+    // REPARTIDOR
+    // ubicacionRepartidor = [lng, lat]
+    // =====================================================
+    bounds.extend(
+        ubicacionRepartidor
+    );
+
+
+    // =====================================================
+    // RECOGIDA
+    // =====================================================
+    bounds.extend([
+
+        pedido.recogidaLng,
+        pedido.recogidaLat
+
+    ]);
+
+
+    // =====================================================
+    // DESTINO
+    // =====================================================
+    bounds.extend([
+
+        pedido.destinoLng,
+        pedido.destinoLat
+
+    ]);
+
+
+    // =====================================================
+    // AJUSTAR MAPA
+    // =====================================================
+    map.fitBounds(
+
+        bounds,
+
+        {
+
+            padding: {
+                top: 50,
+                bottom: 250,
+                left: 40,
+                right: 40
+            },
+
+
+            maxZoom:
+                15,
+
+            duration:
+                1200
+
+        }
+
+    );
+}
+
+
+// =========================================================
+// ACEPTAR PEDIDO
+// =========================================================
 async function aceptarPedido(
     pedidoAceptado
 ) {
@@ -700,10 +906,25 @@ async function aceptarPedido(
     );
 
 
-    /* =====================================================
-       ENVIAR COORDENADAS A FLASK
-       ===================================================== */
+    // =====================================================
+    // VERIFICAR QUE EXISTE REPARTIDOR
+    // =====================================================
+    if (
+        !ubicacionRepartidor
+    ) {
 
+        alert(
+            "Primero selecciona la ubicación " +
+            "del repartidor en el mapa."
+        );
+
+        return;
+    }
+
+
+    // =====================================================
+    // ENVIAR DATOS A FLASK
+    // =====================================================
     try {
 
         const respuesta =
@@ -711,7 +932,8 @@ async function aceptarPedido(
                 "/api/pedido/aceptar",
                 {
 
-                    method: "POST",
+                    method:
+                        "POST",
 
                     headers: {
 
@@ -720,23 +942,66 @@ async function aceptarPedido(
 
                     },
 
-                    body: JSON.stringify({
+                    body:
+                        JSON.stringify({
 
-                        pedido_id:
-                            pedidoAceptado.id,
+                            // =================================
+                            // ID
+                            // =================================
+                            pedido_id:
+                                pedidoAceptado.id,
 
-                        lat:
-                            pedidoAceptado.lat,
 
-                        lng:
-                            pedidoAceptado.lng
+                            // =================================
+                            // REPARTIDOR
+                            // =================================
+                            repartidor: {
 
-                    })
+                                lat:
+                                    ubicacionRepartidor[1],
+
+                                lng:
+                                    ubicacionRepartidor[0]
+
+                            },
+
+
+                            // =================================
+                            // RECOGIDA
+                            // =================================
+                            recogida: {
+
+                                lat:
+                                    pedidoAceptado.recogidaLat,
+
+                                lng:
+                                    pedidoAceptado.recogidaLng
+
+                            },
+
+
+                            // =================================
+                            // DESTINO
+                            // =================================
+                            destino: {
+
+                                lat:
+                                    pedidoAceptado.destinoLat,
+
+                                lng:
+                                    pedidoAceptado.destinoLng
+
+                            }
+
+                        })
 
                 }
             );
 
 
+        // =================================================
+        // VERIFICAR RESPUESTA
+        // =================================================
         if (
             !respuesta.ok
         ) {
@@ -757,8 +1022,8 @@ async function aceptarPedido(
             datos
         );
 
-
     }
+
     catch (error) {
 
         console.error(
@@ -766,20 +1031,17 @@ async function aceptarPedido(
             error
         );
 
-        /*
-           Si Flask rechaza la petición,
-           NO eliminamos los pedidos.
-        */
 
+        // =================================================
+        // NO CONTINUAR SI FLASK FALLA
+        // =================================================
         return;
-
     }
 
 
-    /* =====================================================
-       ELIMINAR LOS DEMÁS PEDIDOS
-       ===================================================== */
-
+    // =====================================================
+    // ELIMINAR LOS DEMÁS PEDIDOS
+    // =====================================================
     pedidosActivos.forEach(
         pedido => {
 
@@ -798,18 +1060,16 @@ async function aceptarPedido(
     );
 
 
-    /* =====================================================
-       MARCAR COMO ACEPTADO
-       ===================================================== */
-
+    // =====================================================
+    // MARCAR COMO ACEPTADO
+    // =====================================================
     pedidoAceptado.aceptado =
         true;
 
 
-    /* =====================================================
-       DETENER TIMER
-       ===================================================== */
-
+    // =====================================================
+    // DETENER TIMER
+    // =====================================================
     if (
         pedidoAceptado.timer
     ) {
@@ -820,62 +1080,82 @@ async function aceptarPedido(
 
         pedidoAceptado.timer =
             null;
+    }
+
+
+    // =====================================================
+    // ELIMINAR TARJETA
+    // =====================================================
+    if (
+        pedidoAceptado.mensaje
+    ) {
+
+        pedidoAceptado.mensaje.remove();
 
     }
 
 
-    /* =====================================================
-       ELIMINAR TARJETA
-       ===================================================== */
-
-    pedidoAceptado.mensaje.remove();
-
-
-    /* =====================================================
-       LIMPIAR LISTA
-       ===================================================== */
-
+    // =====================================================
+    // LIMPIAR LISTA
+    // =====================================================
     pedidosActivos.clear();
+
 
     pedidosActivos.add(
         pedidoAceptado
     );
 
 
-    /* =====================================================
-       CENTRAR MAPA EN DESTINO
-       ===================================================== */
+    // =====================================================
+    // MOSTRAR REPARTIDOR + RECOGIDA + DESTINO
+    // =====================================================
+    enfocarPedidoCompleto(
+        pedidoAceptado
+    );
 
-    map.flyTo({
 
-        center: [
+    // =====================================================
+    // MOSTRAR INFORMACIÓN
+    // =====================================================
+    console.log(
+        "================================"
+    );
 
-            pedidoAceptado.lng,
+    console.log(
+        "PEDIDO ACEPTADO"
+    );
 
-            pedidoAceptado.lat
+    console.log(
+        "================================"
+    );
 
-        ],
+    console.log(
+        "Pedido:",
+        pedidoAceptado.id
+    );
 
-        zoom: 16,
+    console.log(
+        "Repartidor:",
+        ubicacionRepartidor
+    );
 
-        duration: 1000
-
-    });
-
+    console.log(
+        "Recogida:",
+        pedidoAceptado.recogidaLat,
+        pedidoAceptado.recogidaLng
+    );
 
     console.log(
         "Destino:",
-        pedidoAceptado.lat,
-        pedidoAceptado.lng
+        pedidoAceptado.destinoLat,
+        pedidoAceptado.destinoLng
     );
-
 }
 
 
-/* =========================================================
-   RECHAZAR
-   ========================================================= */
-
+// =========================================================
+// RECHAZAR PEDIDO
+// =========================================================
 function rechazarPedido(
     pedido
 ) {
@@ -889,20 +1169,19 @@ function rechazarPedido(
     eliminarPedido(
         pedido
     );
-
 }
 
 
-/* =========================================================
-   ELIMINAR PEDIDO
-   ========================================================= */
-
+// =========================================================
+// ELIMINAR PEDIDO
+// =========================================================
 function eliminarPedido(
     pedido
 ) {
 
-    /* Detener timer */
-
+    // =====================================================
+    // DETENER TIMER
+    // =====================================================
     if (
         pedido.timer
     ) {
@@ -913,26 +1192,40 @@ function eliminarPedido(
 
         pedido.timer =
             null;
-
     }
 
 
-    /* Eliminar marcador */
-
+    // =====================================================
+    // ELIMINAR MARCADOR DE RECOGIDA
+    // =====================================================
     if (
-        pedido.marcador
+        pedido.marcadorRecogida
     ) {
 
-        pedido.marcador.remove();
+        pedido.marcadorRecogida.remove();
 
-        pedido.marcador =
+        pedido.marcadorRecogida =
             null;
-
     }
 
 
-    /* Eliminar tarjeta */
+    // =====================================================
+    // ELIMINAR MARCADOR DE DESTINO
+    // =====================================================
+    if (
+        pedido.marcadorDestino
+    ) {
 
+        pedido.marcadorDestino.remove();
+
+        pedido.marcadorDestino =
+            null;
+    }
+
+
+    // =====================================================
+    // ELIMINAR TARJETA
+    // =====================================================
     if (
         pedido.mensaje
     ) {
@@ -941,23 +1234,21 @@ function eliminarPedido(
 
         pedido.mensaje =
             null;
-
     }
 
 
-    /* Quitar de pedidos activos */
-
+    // =====================================================
+    // QUITAR DE PEDIDOS ACTIVOS
+    // =====================================================
     pedidosActivos.delete(
         pedido
     );
-
 }
 
 
-/* =========================================================
-   OBTENER DIRECCIÓN
-   ========================================================= */
-
+// =========================================================
+// OBTENER DIRECCIÓN
+// =========================================================
 async function obtenerDireccion(
     lat,
     lng
@@ -994,30 +1285,44 @@ async function obtenerDireccion(
 
 
     return datos.display_name;
-
 }
 
 
-
-
-/////////// CREACIÓN DE PEDIDOS DE PRUEBA ///////////
+// =========================================================
+// EJEMPLO DE PEDIDO
+// =========================================================
 crearPedido({
-    id: 123,
-    prioridad: "#ff0000",
-    tiempo: 30,
-    titulo: "Pedido #123",
-    detalles: "Entregar paquete.",
-    lat: 25.6866,
-    lng: -100.3161
+    id:123,
+    prioridad:"#9e1111",
+    tiempo:30,
+    titulo:"Pedido #123",
+    detalles:"Recoger paquete y entregar.",
+    // =====================================================
+    // 📦 RECOGIDA
+    // =====================================================
+    recogidaLat:25.6866,
+    recogidaLng:-100.3161,
+    // =====================================================
+    // 📍 DESTINO
+    // =====================================================
+    destinoLat:25.7000,
+    destinoLng:-100.2900
 });
 
-
 crearPedido({
-    id: 123,
-    prioridad: "#d4ff00",
-    tiempo: 30,
-    titulo: "Pedido #123",
-    detalles: "Entregar paquete.",
-    lat: 35.6866,
-    lng: -110.3161
+    id:456,
+    prioridad:"#53bb0d",
+    tiempo:30,
+    titulo:"Pedido #123",
+    detalles:"Recoger paquete y entregar.",
+    // =====================================================
+    // 📦 RECOGIDA
+    // =====================================================
+    recogidaLat:25.6860,
+    recogidaLng:-100.3157,
+    // =====================================================
+    // 📍 DESTINO
+    // =====================================================
+    destinoLat:25.7300,
+    destinoLng:-100.2900
 });
