@@ -21,13 +21,16 @@ def aceptar_pedido():
     pedido_id = datos.get("pedido_id")
     lat = datos.get("lat")
     lng = datos.get("lng")
+
     print("Pedido:", pedido_id)
     print("Latitud:", lat)
     print("Longitud:", lng)
+
     # Aquí haces lo que necesites:
     # guardar en BD
     # actualizar estado
     # enviar al repartidor, etc.
+
     return jsonify({
         "ok": True,
         "pedido_id": pedido_id,
