@@ -1,17 +1,15 @@
 from flask import Flask, render_template, request, jsonify
 
-# 1. Importar los módulos que creaste
+# 1. Importar los módulos limpios (sin duplicados)
 from modules.explainer import analizar_y_explicar
 from modules.database import init_db, guardar_pedido
-from modules.database import inicializar_tabla, guardar_pedido
 
 app = Flask(__name__)
-init_db()
 
 # 2. Inicializar la base de datos al arrancar el servidor
 try:
-    inicializar_tabla()
-    print("Base de datos conectada y tabla verificada.")
+    init_db()
+    print("Base de datos conectada y tablas verificadas exitosamente.")
 except Exception as e:
     print(f"Advertencia: No se pudo conectar a la base de datos: {e}")
 
@@ -52,4 +50,3 @@ def evaluar_pedido():
 if __name__ == '__main__':
     # Usar el puerto 5000 por defecto, accesible desde cualquier IP
     app.run(host='0.0.0.0', port=5000, debug=True)
- 
