@@ -1,5 +1,7 @@
+import os
 from flask import Flask, render_template, jsonify, request
 from modules.simulation import ShiftSimulator
+from modules.explainer import analizar_y_explicar
 
 app = Flask(__name__)
 simulator = ShiftSimulator()
@@ -8,14 +10,27 @@ simulator = ShiftSimulator()
 def index():
     return render_template('main.html')
 
-@app.route('/perfil')
-def perfil():
-    return render_template('perfil.html')
+@app.route('/api/evaluar', methods=['POST'])
+def evaluar_pedido():
+    # 1. Recibir los datos del pedido que manda tu mapa
+    datos = request.json
+    distancia = datos.get("distancia_km")
+    tarifa = datos.get("tarifa_mxn")
+    trafico = datos.get("trafico", "Moderado") # Moderado por defecto
 
-@app.route('/config')
-def config():
-    return render_template('config.html')
-
+    # 2. Pasar los datos a tu Agente Gemini
+    try:
+        resultado_ia = analizar_y_explicar(distancia, tarifa, trafico)
+        
+        # 3. Enviar la decisión estructurada de vuelta al mapa
+        return jsonify({
+            "status": "success",
+            "decision": resultado_ia["decision"],
+            "explicacion": resultado_ia["explicacion"]
+        })
+    except Exception as e:
+        # Por si falla la API de Gemini
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/tick')
 def get_tick():
@@ -25,19 +40,14 @@ def get_tick():
 
 @app.route("/api/pedido/aceptar", methods=["POST"])
 def aceptar_pedido():
-    datos = request.get_json(silent=True) or {}
+    datos = request.get_json()
     pedido_id = datos.get("pedido_id")
-    repartidor = datos.get("repartidor") or {}
-    recogida = datos.get("recogida") or {}
-    destino = datos.get("destino") or {}
-    lat = repartidor.get("lat")
-    lng = repartidor.get("lng")
+    lat = datos.get("lat")
+    lng = datos.get("lng")
 
     print("Pedido:", pedido_id)
     print("Latitud:", lat)
     print("Longitud:", lng)
-    print("Recogida:", recogida)
-    print("Destino:", destino)
 
     # Aquí haces lo que necesites:
     # guardar en BD
@@ -48,13 +58,9 @@ def aceptar_pedido():
         "ok": True,
         "pedido_id": pedido_id,
         "lat": lat,
-        "lng": lng,
-        "recogida": recogida,
-        "destino": destino
+        "lng": lng
     })
 
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
-
-
