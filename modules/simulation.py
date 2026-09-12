@@ -23,27 +23,35 @@ class ShiftSimulator:
     def advance_tick(self) -> TickResponse:
         self.tick_count += 1
         
+        # Mover agentes
         self.base_lat = self._move_towards(self.base_lat, self.target_base.lat)
         self.base_lon = self._move_towards(self.base_lon, self.target_base.lon)
-        
         self.smart_lat = self._move_towards(self.smart_lat, self.target_smart.lat, step=0.0015)
         self.smart_lon = self._move_towards(self.smart_lon, self.target_smart.lon, step=0.0015)
 
-        if self.base_lat == self.target_base.lat and self.base_lon == self.target_base.lon:
-            self.target_base = self._random_mty_coord()
-        if self.smart_lat == self.target_smart.lat and self.smart_lon == self.target_smart.lon:
-            self.target_smart = self._random_mty_coord()
+        # Calcular distancias y ganancias acumuladas
+        base_earnings = self.tick_count * 2.5
+        smart_earnings = self.tick_count * 4.2
+        fuel_smart = self.tick_count * 0.3
+
+        # Persistir telemetría en TigerData cada 5 ticks para no saturar la red
+        if self.tick_count % 5 == 0:
+            insert_telemetry(self.tick_count, "smart_agent", self.smart_lat, self.smart_lon, smart_earnings, fuel_smart)
 
         return TickResponse(
             tick=self.tick_count,
             shift_remaining_minutes=max(0, 360 - self.tick_count),
             baseline_agent=AgentState(
-                agent_id="baseline", coords=Coordinates(lat=self.base_lat, lon=self.base_lon),
-                net_earnings=self.tick_count * 2.5, fuel_spent=self.tick_count * 0.5
+                agent_id="baseline", 
+                coords=Coordinates(lat=self.base_lat, lon=self.base_lon),
+                net_earnings=base_earnings, 
+                fuel_spent=self.tick_count * 0.5
             ),
             smart_agent=AgentState(
-                agent_id="smart", coords=Coordinates(lat=self.smart_lat, lon=self.smart_lon),
-                net_earnings=self.tick_count * 4.0, fuel_spent=self.tick_count * 0.3
+                agent_id="smart", 
+                coords=Coordinates(lat=self.smart_lat, lon=self.smart_lon),
+                net_earnings=smart_earnings, 
+                fuel_spent=fuel_smart
             )
         )
 
