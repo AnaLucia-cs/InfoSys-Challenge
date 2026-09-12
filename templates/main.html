@@ -7,7 +7,7 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link rel="stylesheet" href="static\css\general.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/general.css') }}">
 
     <!-- MAPLIBRE -->
     <link
@@ -26,9 +26,9 @@
         <div id="contenido">
 
             <div id="op">
-                <a href="#">Main</a>
-                <a href="#">Perfil</a>    
-                <a href="#">Configuración</a>
+                <a href="{{ url_for('index') }}">Home</a>
+                <a href="{{ url_for('perfil') }}">Perfil</a>
+                <a href="{{ url_for('config') }}">Configuración</a>
             </div>
 
             <div id="map">
@@ -45,8 +45,7 @@
     <script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
 
     <!-- TU JS -->
-    <script src="static\js\js.js"></script>
-    <script src= "C:\Users\Nana\Documents\GitHub\viktor\InfoSys-Challenge\static\js\generar_mensajes.js"></script>
+    <script src="{{ url_for('static', filename='js/js.js') }}"></script>
 
 </body>
 

@@ -1,4 +1,3 @@
-import os
 from flask import Flask, render_template, jsonify, request
 from modules.simulation import ShiftSimulator
 
@@ -9,6 +8,15 @@ simulator = ShiftSimulator()
 def index():
     return render_template('main.html')
 
+@app.route('/perfil')
+def perfil():
+    return render_template('perfil.html')
+
+@app.route('/config')
+def config():
+    return render_template('config.html')
+
+
 @app.route('/api/tick')
 def get_tick():
     current_state = simulator.advance_tick()
@@ -17,14 +25,19 @@ def get_tick():
 
 @app.route("/api/pedido/aceptar", methods=["POST"])
 def aceptar_pedido():
-    datos = request.get_json()
+    datos = request.get_json(silent=True) or {}
     pedido_id = datos.get("pedido_id")
-    lat = datos.get("lat")
-    lng = datos.get("lng")
+    repartidor = datos.get("repartidor") or {}
+    recogida = datos.get("recogida") or {}
+    destino = datos.get("destino") or {}
+    lat = repartidor.get("lat")
+    lng = repartidor.get("lng")
 
     print("Pedido:", pedido_id)
     print("Latitud:", lat)
     print("Longitud:", lng)
+    print("Recogida:", recogida)
+    print("Destino:", destino)
 
     # Aquí haces lo que necesites:
     # guardar en BD
@@ -35,7 +48,9 @@ def aceptar_pedido():
         "ok": True,
         "pedido_id": pedido_id,
         "lat": lat,
-        "lng": lng
+        "lng": lng,
+        "recogida": recogida,
+        "destino": destino
     })
 
 
