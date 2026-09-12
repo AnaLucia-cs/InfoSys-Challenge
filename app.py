@@ -1,10 +1,12 @@
 from flask import Flask, render_template, request, jsonify
 
 # 1. Importar los módulos que creaste
-from explainer import analizar_y_explicar
+from modules.explainer import analizar_y_explicar
+from modules.database import init_db, guardar_pedido
 from modules.database import inicializar_tabla, guardar_pedido
 
 app = Flask(__name__)
+init_db()
 
 # 2. Inicializar la base de datos al arrancar el servidor
 try:
