@@ -1,3 +1,4 @@
+const pedidosActivos = new Set();
 //CREAR MAPA DE MTY
 const map = new maplibregl.Map({
     container: 'map',
@@ -237,8 +238,13 @@ async function calcularRuta(origen, destino) {
 
 
 
+/* =========================================================
+   CREAR PEDIDO
+   ========================================================= */
 
 function crearPedido({
+
+    id = null,
 
     prioridad = "#9783f0",
 
@@ -254,9 +260,8 @@ function crearPedido({
 
 }) {
 
-
     /* =====================================================
-       VALIDAR COORDENADAS
+       VALIDAR DATOS
        ===================================================== */
 
     if (
@@ -265,7 +270,7 @@ function crearPedido({
     ) {
 
         console.error(
-            "El pedido necesita lat y lng válidos."
+            "El pedido necesita coordenadas válidas."
         );
 
         return;
@@ -274,7 +279,7 @@ function crearPedido({
 
 
     /* =====================================================
-       CONTENEDOR DE PEDIDOS
+       CONTENEDOR
        ===================================================== */
 
     const contenedor =
@@ -283,19 +288,8 @@ function crearPedido({
         );
 
 
-    if (!contenedor) {
-
-        console.error(
-            "No existe #display-message en el HTML."
-        );
-
-        return;
-
-    }
-
-
     /* =====================================================
-       CREAR TARJETA
+       TARJETA
        ===================================================== */
 
     const mensaje =
@@ -319,7 +313,7 @@ function crearPedido({
 
 
     /* =====================================================
-       INDICADOR DE PRIORIDAD
+       PRIORIDAD
        ===================================================== */
 
     const indicator =
@@ -425,7 +419,7 @@ function crearPedido({
 
 
     /* =====================================================
-       ARMAR BOTONES
+       ARMAR TARJETA
        ===================================================== */
 
     buttons.appendChild(
@@ -436,10 +430,6 @@ function crearPedido({
         rejectButton
     );
 
-
-    /* =====================================================
-       ARMAR CONTENIDO
-       ===================================================== */
 
     messageContent.appendChild(
         message
@@ -458,10 +448,6 @@ function crearPedido({
     );
 
 
-    /* =====================================================
-       ARMAR MENSAJE COMPLETO
-       ===================================================== */
-
     mensaje.appendChild(
         time
     );
@@ -475,29 +461,13 @@ function crearPedido({
     );
 
 
-    /* =====================================================
-       AGREGAR A LA PANTALLA
-       ===================================================== */
-
     contenedor.appendChild(
         mensaje
     );
 
 
     /* =====================================================
-       CREAR MARCADOR
-       =====================================================
-
-       IMPORTANTE:
-
-       MapLibre utiliza:
-
-       [longitud, latitud]
-
-       NO:
-
-       [latitud, longitud]
-
+       MARCADOR
        ===================================================== */
 
     const marcador =
@@ -516,27 +486,55 @@ function crearPedido({
 
 
     /* =====================================================
-       GUARDAR DATOS EN LA TARJETA
+       OBJETO PEDIDO
        ===================================================== */
 
-    mensaje.dataset.lat =
-        lat;
+    const pedido = {
 
-    mensaje.dataset.lng =
-        lng;
+        id: id,
 
+        titulo: titulo,
 
-    /*
-       Guardamos referencia al marcador
-       para poder eliminarlo después.
-    */
+        detalles: detalles,
 
-    mensaje.marcador =
-        marcador;
+        prioridad: prioridad,
+
+        tiempo: tiempo,
+
+        lat: lat,
+
+        lng: lng,
+
+        mensaje: mensaje,
+
+        marcador: marcador,
+
+        timer: null,
+
+        aceptado: false
+
+    };
 
 
     /* =====================================================
-       OBTENER DIRECCIÓN
+       GUARDAR PEDIDO
+       ===================================================== */
+
+    pedidosActivos.add(
+        pedido
+    );
+
+
+    /* =====================================================
+       GUARDAR REFERENCIA
+       ===================================================== */
+
+    mensaje.pedido =
+        pedido;
+
+
+    /* =====================================================
+       DIRECCIÓN
        ===================================================== */
 
     obtenerDireccion(
@@ -557,7 +555,6 @@ function crearPedido({
         error => {
 
             console.error(
-                "Error obteniendo dirección:",
                 error
             );
 
@@ -576,26 +573,13 @@ function crearPedido({
         tiempo;
 
 
-    /*
-       Barra llena
-    */
-
     time.style.width =
         "100%";
 
 
-    /*
-       Animación de la barra
-    */
-
     time.style.transition =
         `width ${tiempo}s linear`;
 
-
-    /*
-       Esperamos un poco antes de
-       empezar la animación.
-    */
 
     setTimeout(
         () => {
@@ -608,26 +592,20 @@ function crearPedido({
     );
 
 
-    /* =====================================================
-       CONTADOR
-       ===================================================== */
-
-    const timer =
+    pedido.timer =
         setInterval(
             () => {
 
                 tiempoRestante--;
 
 
-                /*
-                   ¿Se acabó el tiempo?
-                */
-
                 if (
                     tiempoRestante <= 0
                 ) {
 
-                    eliminarPedido();
+                    eliminarPedido(
+                        pedido
+                    );
 
                 }
 
@@ -637,100 +615,44 @@ function crearPedido({
 
 
     /* =====================================================
-       FUNCIÓN ELIMINAR PEDIDO
-       ===================================================== */
-
-    function eliminarPedido() {
-
-
-        /*
-           Detener el contador
-        */
-
-        clearInterval(
-            timer
-        );
-
-
-        /*
-           Eliminar marcador
-        */
-
-        if (
-            mensaje.marcador
-        ) {
-
-            mensaje.marcador.remove();
-
-        }
-
-
-        /*
-           Eliminar tarjeta
-        */
-
-        mensaje.remove();
-
-    }
-
-
-    /* =====================================================
-       BOTÓN ACEPTAR
+       ACEPTAR
        ===================================================== */
 
     acceptButton.addEventListener(
         "click",
         () => {
-            console.log(
-                "Pedido aceptado:",
-                titulo
-            );
-            console.log(
-                "Coordenadas:",
-                lat,
-                lng
-            );
 
-
-            eliminarPedido();
+            aceptarPedido(
+                pedido
+            );
 
         }
     );
 
 
     /* =====================================================
-       BOTÓN RECHAZAR
+       RECHAZAR
        ===================================================== */
 
     rejectButton.addEventListener(
         "click",
         () => {
-            console.log(
-                "Pedido rechazado:",
-                titulo
+
+            rechazarPedido(
+                pedido
             );
-            eliminarPedido();
+
         }
     );
 
 
     /* =====================================================
-       CLICK EN LA TARJETA
-       =====================================================
-
-       Al tocar el pedido podemos centrar
-       el mapa en sus coordenadas.
+       CLICK EN TARJETA
        ===================================================== */
 
     mensaje.addEventListener(
         "click",
-        (evento) => {
-
-
-            /*
-               No mover el mapa cuando se
-               presionan los botones.
-            */
+        evento => {
 
             if (
                 evento.target.tagName ===
@@ -759,59 +681,288 @@ function crearPedido({
     );
 
 
-    /* =====================================================
-       CLICK EN EL MARCADOR
-       ===================================================== */
-
-    marcador
-        .getElement()
-        .addEventListener(
-            "click",
-            () => {
-
-                /*
-                   Llevar la tarjeta al frente
-                   desplazándola dentro del contenedor.
-                */
-
-                mensaje.scrollIntoView({
-
-                    behavior: "smooth",
-
-                    block: "nearest"
-
-                });
-
-            }
-        );
-
-
-    /* =====================================================
-       DEVOLVER TARJETA
-       ===================================================== */
-
     return mensaje;
 
 }
 
 
 /* =========================================================
-   OBTENER DIRECCIÓN DESDE COORDENADAS
-   =========================================================
+   ACEPTAR PEDIDO
+   ========================================================= */
 
-   Convierte:
+async function aceptarPedido(
+    pedidoAceptado
+) {
 
-   lat = 25.6866
-   lng = -100.3161
+    console.log(
+        "Pedido aceptado:",
+        pedidoAceptado
+    );
 
-   en una dirección legible.
 
+    /* =====================================================
+       ENVIAR COORDENADAS A FLASK
+       ===================================================== */
+
+    try {
+
+        const respuesta =
+            await fetch(
+                "/api/pedido/aceptar",
+                {
+
+                    method: "POST",
+
+                    headers: {
+
+                        "Content-Type":
+                            "application/json"
+
+                    },
+
+                    body: JSON.stringify({
+
+                        pedido_id:
+                            pedidoAceptado.id,
+
+                        lat:
+                            pedidoAceptado.lat,
+
+                        lng:
+                            pedidoAceptado.lng
+
+                    })
+
+                }
+            );
+
+
+        if (
+            !respuesta.ok
+        ) {
+
+            throw new Error(
+                "Error enviando pedido al servidor."
+            );
+
+        }
+
+
+        const datos =
+            await respuesta.json();
+
+
+        console.log(
+            "Respuesta de Flask:",
+            datos
+        );
+
+
+    }
+    catch (error) {
+
+        console.error(
+            "No se pudo aceptar el pedido:",
+            error
+        );
+
+        /*
+           Si Flask rechaza la petición,
+           NO eliminamos los pedidos.
+        */
+
+        return;
+
+    }
+
+
+    /* =====================================================
+       ELIMINAR LOS DEMÁS PEDIDOS
+       ===================================================== */
+
+    pedidosActivos.forEach(
+        pedido => {
+
+            if (
+                pedido !==
+                pedidoAceptado
+            ) {
+
+                eliminarPedido(
+                    pedido
+                );
+
+            }
+
+        }
+    );
+
+
+    /* =====================================================
+       MARCAR COMO ACEPTADO
+       ===================================================== */
+
+    pedidoAceptado.aceptado =
+        true;
+
+
+    /* =====================================================
+       DETENER TIMER
+       ===================================================== */
+
+    if (
+        pedidoAceptado.timer
+    ) {
+
+        clearInterval(
+            pedidoAceptado.timer
+        );
+
+        pedidoAceptado.timer =
+            null;
+
+    }
+
+
+    /* =====================================================
+       ELIMINAR TARJETA
+       ===================================================== */
+
+    pedidoAceptado.mensaje.remove();
+
+
+    /* =====================================================
+       LIMPIAR LISTA
+       ===================================================== */
+
+    pedidosActivos.clear();
+
+    pedidosActivos.add(
+        pedidoAceptado
+    );
+
+
+    /* =====================================================
+       CENTRAR MAPA EN DESTINO
+       ===================================================== */
+
+    map.flyTo({
+
+        center: [
+
+            pedidoAceptado.lng,
+
+            pedidoAceptado.lat
+
+        ],
+
+        zoom: 16,
+
+        duration: 1000
+
+    });
+
+
+    console.log(
+        "Destino:",
+        pedidoAceptado.lat,
+        pedidoAceptado.lng
+    );
+
+}
+
+
+/* =========================================================
+   RECHAZAR
+   ========================================================= */
+
+function rechazarPedido(
+    pedido
+) {
+
+    console.log(
+        "Pedido rechazado:",
+        pedido.id
+    );
+
+
+    eliminarPedido(
+        pedido
+    );
+
+}
+
+
+/* =========================================================
+   ELIMINAR PEDIDO
+   ========================================================= */
+
+function eliminarPedido(
+    pedido
+) {
+
+    /* Detener timer */
+
+    if (
+        pedido.timer
+    ) {
+
+        clearInterval(
+            pedido.timer
+        );
+
+        pedido.timer =
+            null;
+
+    }
+
+
+    /* Eliminar marcador */
+
+    if (
+        pedido.marcador
+    ) {
+
+        pedido.marcador.remove();
+
+        pedido.marcador =
+            null;
+
+    }
+
+
+    /* Eliminar tarjeta */
+
+    if (
+        pedido.mensaje
+    ) {
+
+        pedido.mensaje.remove();
+
+        pedido.mensaje =
+            null;
+
+    }
+
+
+    /* Quitar de pedidos activos */
+
+    pedidosActivos.delete(
+        pedido
+    );
+
+}
+
+
+/* =========================================================
+   OBTENER DIRECCIÓN
    ========================================================= */
 
 async function obtenerDireccion(
     lat,
     lng
 ) {
+
     const url =
         `https://nominatim.openstreetmap.org/reverse` +
         `?format=json` +
@@ -819,30 +970,29 @@ async function obtenerDireccion(
         `&lon=${lng}` +
         `&zoom=18` +
         `&addressdetails=1`;
+
+
     const respuesta =
         await fetch(
-            url,
-            {
-                headers: {
-                    "Accept":
-                        "application/json"
-                }
-            }
+            url
         );
+
+
     if (
         !respuesta.ok
     ) {
+
         throw new Error(
             "No se pudo obtener la dirección."
         );
 
     }
+
+
     const datos =
         await respuesta.json();
-    /*
-       display_name contiene la dirección
-       completa.
-    */
+
+
     return datos.display_name;
 
 }
@@ -850,35 +1000,24 @@ async function obtenerDireccion(
 
 
 
-
+/////////// CREACIÓN DE PEDIDOS DE PRUEBA ///////////
 crearPedido({
+    id: 123,
     prioridad: "#ff0000",
     tiempo: 30,
-    titulo: "Pedido #001",
-    detalles:
-        "Recoger paquete y entregarlo al cliente.",
+    titulo: "Pedido #123",
+    detalles: "Entregar paquete.",
     lat: 25.6866,
     lng: -100.3161
 });
 
 
 crearPedido({
-    prioridad: "#ff9800",
+    id: 123,
+    prioridad: "#d4ff00",
     tiempo: 30,
-    titulo: "Pedido #002",
-    detalles:
-        "Recoger comida en el restaurante.",
-    lat: 25.6712,
-    lng: -100.3098
-});
-
-
-crearPedido({
-    prioridad: "#00c853",
-    tiempo: 30,
-    titulo: "Pedido #003",
-    detalles:
-        "Paquete pequeño. Dejar en recepción.",
-    lat: 25.6940,
-    lng: -100.3270
+    titulo: "Pedido #123",
+    detalles: "Entregar paquete.",
+    lat: 35.6866,
+    lng: -110.3161
 });
