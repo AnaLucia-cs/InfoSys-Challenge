@@ -1,5 +1,5 @@
 import random
-from modules.contract import TickResponse, AgentState, Coordinates
+from modules.contract import TickResponse, AgentState, Coordinates, OrderContract
 
 class ShiftSimulator:
     def __init__(self):
