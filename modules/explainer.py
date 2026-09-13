@@ -1,10 +1,17 @@
 import os
 import json
-from google import generativeai as genai
+from google import genai
 from dotenv import load_dotenv
 
+# Cargar variables de entorno
 load_dotenv()
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+api_key = os.getenv("GEMINI_API_KEY")
+if not api_key:
+    raise ValueError("No se encontró GEMINI_API_KEY en el archivo .env")
+
+# Crear cliente de Gemini
+client = genai.Client(api_key=api_key)
 
 def analizar_y_explicar(distancia_km, tarifa_mxn, trafico):
     prompt = f"""
@@ -13,10 +20,15 @@ def analizar_y_explicar(distancia_km, tarifa_mxn, trafico):
     "decision": "ACEPTAR" o "RECHAZAR"
     "explicacion": "Una justificación de máximo 2 líneas sobre la rentabilidad."
     """
-    
-    model = genai.GenerativeModel('gemini-3.8-flash')
-    respuesta = model.generate_content(prompt)
-    
-    # Limpiar la respuesta por si Gemini añade formato markdown de código (```json)
-    texto_limpio = respuesta.text.replace("```json", "").replace("```", "").strip()
-    return json.loads(texto_limpio)
+
+    # Llamada al modelo nuevo
+    response = client.models.generate_text(
+        model="gemini-2.0-flash",
+        prompt=prompt
+    )
+
+    # Limpiar posibles bloques ```json
+    texto = response.text.strip()
+    texto = texto.replace("```json", "").replace("```", "").strip()
+
+    return json.loads(texto)
