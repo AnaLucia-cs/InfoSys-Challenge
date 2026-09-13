@@ -20,6 +20,7 @@ const map = new maplibregl.Map({
 // =========================================================
 let marcadorOrigen = null;
 let ubicacionRepartidor = null;
+let pedidoEnCurso = null;
 
 
 // =========================================================
@@ -68,6 +69,18 @@ map.on('click', async function (e) {
         }
 
         console.log("Repartidor seleccionado:", ubicacionRepartidor);
+
+        // =====================================================
+        // SI YA HAY UN PEDIDO ACEPTADO, ACTUALIZAR RUTA AUTOMÁTICAMENTE
+        // =====================================================
+        if (pedidoEnCurso) {
+            console.log("Actualizando ruta del repartidor hacia el punto de recogida...");
+            await calcularRuta(
+                ubicacionRepartidor, 
+                [pedidoEnCurso.recogidaLng, pedidoEnCurso.recogidaLat], 
+                "ruta-trayecto-1"
+            );
+        }
 
     } catch (error) {
         console.error("Error al buscar la calle:", error);
@@ -355,6 +368,9 @@ function enfocarPedidoCompleto(pedido) {
 // =========================================================
 // ACEPTAR PEDIDO
 // =========================================================
+// =========================================================
+// ACEPTAR PEDIDO
+// =========================================================
 async function aceptarPedido(pedidoAceptado) {
     console.log("Pedido aceptado:", pedidoAceptado);
 
@@ -364,45 +380,61 @@ async function aceptarPedido(pedidoAceptado) {
     }
 
     try {
-        const respuesta = await fetch("/api/pedido/aceptar", {
+        const urlRuta = `https://router.project-osrm.org/route/v1/driving/${ubicacionRepartidor[0]},${ubicacionRepartidor[1]};${pedidoAceptado.recogidaLng},${pedidoAceptado.recogidaLat}?overview=false`;
+        const respRuta = await fetch(urlRuta);
+        const datosRuta = await respRuta.json();
+        
+        let distanciaKm = 5.0; 
+        if (datosRuta.code === "Ok" && datosRuta.routes.length > 0) {
+            distanciaKm = datosRuta.routes[0].distance / 1000; 
+        }
+
+        const respuesta = await fetch("/api/evaluar", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                pedido_id: pedidoAceptado.id,
-                repartidor: { lat: ubicacionRepartidor[1], lng: ubicacionRepartidor[0] },
-                recogida: { lat: pedidoAceptado.recogidaLat, lng: pedidoAceptado.recogidaLng },
-                destino: { lat: pedidoAceptado.destinoLat, lng: pedidoAceptado.destinoLng }
+                distancia_km: distanciaKm,
+                tarifa_mxn: 50.0, 
+                trafico: "Moderado"
             })
         });
 
-        if (!respuesta.ok) throw new Error("Error enviando pedido al servidor.");
+        if (!respuesta.ok) throw new Error("Error procesando el pedido con la IA.");
         await respuesta.json();
+
     } catch (error) {
         console.error("No se pudo aceptar el pedido:", error);
         return;
     }
 
-    pedidosActivos.forEach(pedido => {
-        if (pedido !== pedidoAceptado) eliminarPedido(pedido);
-    });
-
-    pedidoAceptado.aceptado = true;
-
+    // Detener y limpiar el timer de inmediato para evitar que borre el pedido
     if (pedidoAceptado.timer) {
         clearInterval(pedidoAceptado.timer);
         pedidoAceptado.timer = null;
     }
 
-    if (pedidoAceptado.mensaje) pedidoAceptado.mensaje.remove();
+    // Eliminar los demás pedidos pendientes
+    pedidosActivos.forEach(pedido => {
+        if (pedido !== pedidoAceptado) {
+            eliminarPedido(pedido);
+        }
+    });
+
+    pedidoAceptado.aceptado = true;
+
+    if (pedidoAceptado.mensaje) {
+        pedidoAceptado.mensaje.remove();
+        pedidoAceptado.mensaje = null; // Evita referencias huérfanas
+    }
 
     pedidosActivos.clear();
     pedidosActivos.add(pedidoAceptado);
 
+    pedidoEnCurso = pedidoAceptado; 
+
     enfocarPedidoCompleto(pedidoAceptado);
 
-    // =====================================================
-    // TRAZAR LAS RUTAS AUTOMÁTICAMENTE AL ACEPTAR
-    // =====================================================
+    // Trazar las rutas automáticamente al aceptar
     await calcularRuta(
         ubicacionRepartidor, 
         [pedidoAceptado.recogidaLng, pedidoAceptado.recogidaLat], 
@@ -429,7 +461,13 @@ function rechazarPedido(pedido) {
 // =========================================================
 // ELIMINAR PEDIDO
 // =========================================================
+// =========================================================
+// ELIMINAR PEDIDO
+// =========================================================
 function eliminarPedido(pedido) {
+    // PROTECCIÓN: Si el pedido ya fue aceptado, no permitimos que se borren sus marcadores
+    if (pedido.aceptado) return;
+
     if (pedido.timer) {
         clearInterval(pedido.timer);
         pedido.timer = null;

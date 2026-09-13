@@ -3,7 +3,6 @@ from flask import Flask, render_template, request, jsonify
 # 1. Importar los módulos limpios (sin duplicados)
 from modules.explainer import analizar_y_explicar
 from modules.database import init_db, guardar_pedido
-from modules.database import guardar_pedido
 
 app = Flask(__name__)
 
